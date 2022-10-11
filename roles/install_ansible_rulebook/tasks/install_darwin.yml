@@ -8,9 +8,12 @@
       - maven
       - gcc
 
+- shell: brew --prefix openjdk@17
+  register: brew_jdk
+
 - name: Creating a symlink
   ansible.builtin.file:
-    src: "/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk"
+    src: "{{ brew_jdk.stdout_lines[0] }}/libexec/openjdk.jdk"
     dest: "/Library/Java/JavaVirtualMachines/openjdk-17.jdk"
     state: link
   become: true
@@ -23,13 +26,12 @@
     path: "~/.zprofile"
     regexp: "{{ item.regexp }}"
     line: "{{ item.line }}" 
+    create: yes
   loop:
     - regexp: '^JAVA_HOME'
       line: "JAVA_HOME={{java_home.stdout_lines[0]}}"
-    - regexp: '^RULES_ENGINE'
-      line: RULES_ENGINE=drools
     - regexp: '^CPPFLAGS'
-      line: CPPFLAGS="-I/opt/homebrew/opt/openjdk@17/include"
+      line: CPPFLAGS="-I{{ brew_jdk.stdout_lines[0] }}/include"
 
 - name: Upgrade pip
   ansible.builtin.pip:
@@ -54,6 +56,6 @@
     state: forcereinstall
 
 - name: install collections
-  command: ansible-galaxy collection install community.general ansible.eda 
+  command: ansible-galaxy collection install community.general ansible.eda --ignore-certs
 
     
